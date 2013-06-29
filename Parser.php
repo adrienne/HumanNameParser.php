@@ -10,26 +10,29 @@
  *
  */
 class HumanNameParser_Parser {
-    private $name;
-	 private $leadingInit;
-	 private $first;
-	 private $nicknames;
-	 private $middle;
-	 private $last;
-	 private $suffix;
+	private $name;
+	
+	private $title;
+	private $leadingInit;
+	private $first;
+	private $nicknames;
+	private $middle;
+	private $last;
+	private $suffix;
+	
+	private $titles;
+	private $suffixes;
+	private $prefixes;
 
-	 private $suffixes;
-	 private $prefixes;
-
-	 /*
-	  * Constructor
-	  *
-	  * @param	mixed $name	Either a name as a string or as a Name object.
-	  */
-	  public function __construct($name = NULL)
-	 {
-		  $this->setName($name);
-	  }
+	/*
+	* Constructor
+	*
+	* @param mixed $name Either a name as a string or as a Name object.
+	*/
+	public function __construct($name = NULL)
+	{
+		$this->setName($name);
+	}
 
 	  /**
 	  * Sets name string and parses it.
@@ -47,7 +50,8 @@ class HumanNameParser_Parser {
 			  else {
 				  $this->name = new HumanNameParser_Name($name);
 			  }
-
+			
+			  $this->title = "";
 			  $this->leadingInit = "";
 			  $this->first = "";
 			  $this->nicknames = "";
@@ -55,6 +59,19 @@ class HumanNameParser_Parser {
 			  $this->last = "";
 			  $this->suffix = "";
 
+
+
+
+
+
+			  $this->titles = array('ms','miss','mrs','mr','master','rev','reverend','fr','father','dr','doctor',
+									'atty','attorney','prof','professor','hon','honorable','pres','president',
+									'gov','governor','coach','ofc','officer','msgr','monsignor','sr','sister',
+									'br','brother','supt','superintendent','rep','representative','sen','senator',
+									'amb','ambassador','treas','treasurer','sec','secretary','pvt','private',
+									'cpl','corporal','sgt','sargent','adm','administrative','maj','major',
+									'capt','captain','cmdr','commander','lt','lieutenant','lt col','lieutenant colonel',
+									'col','colonel','gen','general');
 			  $this->suffixes = array('esq','esquire','jr','sr','2','ii','iii','iv');
 			  $this->prefixes = array('bar','ben','bin','da','dal','de la', 'de', 'del','der','di',
 							'ibn','la','le','san','st','ste','van', 'van der', 'van den', 'vel','von');
@@ -96,6 +113,7 @@ class HumanNameParser_Parser {
 	   */
 	  public function getArray($arrType = 'assoc') {
 		  $arr = array();
+		  $arr['title'] = $this->title;
 		  $arr['leadingInit'] = $this->leadingInit;
 		  $arr['first'] = $this->first;
 		  $arr['nicknames'] = $this->nicknames;
@@ -123,17 +141,22 @@ class HumanNameParser_Parser {
 	   */
 	  private function parse() 
 	  {
+		  $titles = implode("\.*|", $this->titles) . "\.*"; // each suffix gets a "\.*" behind it.
 		  $suffixes = implode("\.*|", $this->suffixes) . "\.*"; // each suffix gets a "\.*" behind it.
 		  $prefixes = implode(" |", $this->prefixes) . " "; // each prefix gets a " " behind it.
 
 		  // The regex use is a bit tricky.  *Everything* matched by the regex will be replaced,
 		  //	but you can select a particular parenthesized submatch to be returned.
 		  //	Also, note that each regex requres that the preceding ones have been run, and matches chopped out.
+		  $titleRegex = "/($titles)\.?/";
 		  $nicknamesRegex =		"/ ('|\"|\(\"*'*)(.+?)('|\"|\"*'*\)) /"; // names that starts or end w/ an apostrophe break this
 		  $suffixRegex =			"/,* *($suffixes)$/";
 		  $lastRegex =				"/(?!^)\b([^ ]+ y |$prefixes)*[^ ]+$/";
 		  $leadingInitRegex =	"/^(.\.*)(?= \p{L}{2})/"; // note the lookahead, which isn't returned or replaced
 		  $firstRegex =			"/^[^ ]+/"; //
+
+		  // get suffix, if there is one
+		  $this->title = $this->name->chopWithRegex($titleRegex, 1);
 
 		  // get nickname, if there is one
 		  $this->nicknames = $this->name->chopWithRegex($nicknamesRegex, 2);
@@ -163,10 +186,5 @@ class HumanNameParser_Parser {
 		  $this->middle = $this->name->getStr();
 		  return true;
 	  }
-
-
-
-	  
-
 }
 ?>
